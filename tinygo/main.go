@@ -1,5 +1,5 @@
 // this is just a prove of concept to try to use tinygo instead of the
-// ardiuno-IDE
+// Arduino-IDE
 
 // The Board is connected to two buttons, two LEDs via two relays and a buzzer.
 // If one button is pressed, the corresponding LED is switched on and some sound
@@ -23,37 +23,43 @@ type note struct {
 // A sequence is a slice of notes
 type sequence []note
 
+// Define pins, relays-states and time to wait
+const (
+	// For the buttons pin 8 and 9
+	buttonGreen = machine.D8
+	buttonRed   = machine.D9
+	// For the speaker pin 10
+	speakerPin = machine.D10
+	// For the relays pin 2 and 3
+	relaysGreen = machine.D2
+	relaysRed   = machine.D3
+	// we need to switch true and false, because the relays use GND for ON and
+	// anything else for OFF
+	rON  = false
+	rOFF = true
+	// time to wait before a new button-input is accepted
+	wait = 5
+)
+
 func main() {
 	/*
-	 SETUP
+		SETUP
 	*/
-	// Define pins for the buttons
-	buttonGreen := machine.D8
-	buttonRed := machine.D9
 	// initialize buttons
 	buttonGreen.Configure(machine.PinConfig{Mode: machine.PinInput})
 	buttonRed.Configure(machine.PinConfig{Mode: machine.PinInput})
 
-	// Define pins for the relays
-	relaysGreen := machine.D2
-	relaysRed := machine.D3
-	// we need to switch true and false, because the relays use GND for ON and
-	// anything else for OFF
-	rON := false
-	rOFF := true
 	// initialize relays
 	relaysGreen.Configure(machine.PinConfig{Mode: machine.PinOutput})
 	relaysRed.Configure(machine.PinConfig{Mode: machine.PinOutput})
 	relaysGreen.Set(rOFF)
 	relaysRed.Set(rOFF)
 
-	// Define pin for the speaker
-	speakerPin := machine.D10
 	// initialize Speaker
 	speakerPin.Configure(machine.PinConfig{Mode: machine.PinOutput})
 	speaker := buzzer.New(speakerPin)
 
-	// Define sound-sequences
+	// set sound-sequences
 	goodSequence := sequence{
 		{buzzer.F4, buzzer.Eighth / 2},
 		{buzzer.B4, buzzer.Eighth / 2},
@@ -63,18 +69,6 @@ func main() {
 		{buzzer.E4, buzzer.Eighth / 2},
 		{buzzer.E4, buzzer.Eighth / 2},
 		{buzzer.E4, buzzer.Eighth},
-	}
-
-	// show switches on the corresponding relay and plays the sounds.
-	show := func(pin machine.Pin, seq sequence) {
-		// light ON
-		pin.Set(rON)
-		// play sounds
-		for _, s := range seq {
-			speaker.Tone(s.tone, s.durartion)
-		}
-		// light OFF
-		pin.Set(rOFF)
 	}
 
 	/*
@@ -95,9 +89,24 @@ func main() {
 
 		// If one button is pressed, start the show.
 		if buttonRedPressed {
-			show(relaysRed, badSequnce)
+			show(speaker, relaysRed, badSequnce)
 		} else {
-			show(relaysGreen, goodSequence)
+			show(speaker, relaysGreen, goodSequence)
 		}
+
+		// wait before a new input is accepted
+		time.Sleep(time.Second * wait)
 	}
+}
+
+// show switches on the corresponding relay and plays the sounds.
+func show(speaker buzzer.Device, relays machine.Pin, seq sequence) {
+	// light ON
+	relays.Set(rON)
+	// play sounds
+	for _, s := range seq {
+		speaker.Tone(s.tone, s.durartion)
+	}
+	// light OFF
+	relays.Set(rOFF)
 }
