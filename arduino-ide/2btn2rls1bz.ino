@@ -67,6 +67,7 @@ void loop() {
   } else {
     sameAnsw();
   }
+  delay(5000);
 }
 
 // sameAnsw switches on the relays for green and starts a "positiv"-feeling array of notes.
